@@ -2,7 +2,7 @@
   <div>
     <b-row>
       <b-col md="2" offset-md="10">
-        <a href="#">Crear Propietario</a>
+        <router-link :to="{ name: 'OwnerCreate' }">Create owner</router-link>
       </b-col>
     </b-row>
     <br />
@@ -34,6 +34,20 @@
         </div>
       </b-col>
     </b-row>
+    <b-modal
+      ref="deleteConfirmModal"
+      title="Confirma tu acción"
+      @ok="onDeleteConfirm"
+      @hide="onDeleteModalHide"
+    >
+      <p class="my-4">
+        ¿Estás seguro de que deseas eliminar a este propietario?
+      </p>
+    </b-modal>
+
+    <b-modal ref="alertModal" :title="alertModalTitle" :ok-only="true">
+      <p class="my-4">{{ alertModalContent }}</p>
+    </b-modal>
   </div>
 </template>
 
@@ -50,27 +64,48 @@ export default {
   },
   data() {
     return {
-      owners: []
+      owners: [],
+      selectedOwnerId: null,
+      alertModalTitle: "",
+      alertModalContent: ""
     };
   },
   created() {
-    OwnerService.getAll()
-      .then(response => {
-        this.owners = response.data;
-      })
-      .catch(error => {
-        console.log(error.response.data);
-      });
+    this.fetchOwners();
   },
   methods: {
     detailsOwner(ownerId) {
-      console.log(ownerId);
+      this.$router.push({ name: "OwnerDetails", params: { id: ownerId } });
     },
     updateOwner(ownerId) {
-      console.log("update", ownerId);
+      this.$router.push({ name: "OwnerUpdate", params: { id: ownerId } });
     },
     deleteOwner(ownerId) {
-      console.log("delete", ownerId);
+      this.selectedOwnerId = ownerId;
+      this.$refs.deleteConfirmModal.show();
+      console.log(this.selectedOwnerId);
+    },
+    fetchOwners() {
+      OwnerService.getAll().then(response => {
+        this.owners = response.data;
+      });
+    },
+    onDeleteConfirm() {
+      OwnerService.delete(this.selectedOwnerId)
+        .then(() => {
+          this.alertModalTitle = "Exitosamente";
+          this.alertModalContent = "Propietario de cuenta eliminado con éxito";
+          this.$refs.alertModal.show();
+          this.fetchOwners();
+        })
+        .catch(error => {
+          this.alertModalTitle = "Error";
+          this.alertModalContent = error.response.data;
+          this.$refs.alertModal.show();
+        });
+    },
+    onDeleteModalHide() {
+      this.selectedOwnerId = null;
     }
   }
 };
